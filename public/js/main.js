@@ -2,17 +2,7 @@ $(document).ready(function() {
 	var audio_element = document.createElement('audio');
 	audio_element.setAttribute('src', '/sound/move_final.mp3');
 
-	var board = {
-		/*
-		8: ['', 8, 4, 6, 10, 12, 6, 4, 8],
-		7: ['', 2, 2, 2, 2, 2, 2, 2, 2],
-		6: ['', 0, 0, 0, 0, 0, 0, 0, 0],
-		5: ['', 0, 0, 0, 0, 0, 0, 0, 0],
-		4: ['', 0, 0, 0, 0, 0, 0, 0, 0],
-		3: ['', 0, 0, 0, 0, 0, 0, 0, 0],
-		2: ['', 1, 1, 1, 1, 1, 1, 1, 1],
-		1: ['', 7, 3, 5, 11, 9, 5, 3, 7]
-		*/
+	/*var */board = {
 		8: ['', 7, 1, 0, 0, 0, 0, 2, 8],
 		7: ['', 3, 1, 0, 0, 0, 0, 2, 4],
 		6: ['', 5, 1, 0, 0, 0, 0, 2, 6],
@@ -44,7 +34,7 @@ $(document).ready(function() {
 		var id = $(this).parent('div').addClass('down').attr('id');
 	});
 
-	$('section#board img').draggable({ containment: 'section#board', cursorAt: { top: 50, left: 50 }, revert: 'invalid' });
+	$('section#board img').draggable({ containment: 'section#board', cursorAt: { top: 50, left: 50 }, revert: 'invalid', revertDuration: 10 });
 	$('section#board .column div').droppable({
 		tolerance: 'intersect',
 		accept: function(e) {
@@ -60,7 +50,7 @@ $(document).ready(function() {
 
 			var board_to = board[col_to][row_to];
 			if((color === 'white' && board_to % 2 !== 0) || (color === 'black' && board_to % 2 === 0 && board_to !== 0)) {
-				// prevent moving onto another piece
+				// prevent moving onto another piece of same color
 				return false;
 			}
 
@@ -74,22 +64,22 @@ $(document).ready(function() {
 				} else if((color === 'white' && row == 2) || (color === 'black' && row == 7)) {
 					// first move double
 					if(color === 'white') {
-						return col_to === col && row_to - row <= 2;
+						return col_to === col && row_to - row <= 2 && board[col][parseInt(row) + 1] === 0 && board[col_to][row_to] === 0;
 					} else if(color === 'black') {
-						return col_to === col && row_to < row && row_to - row <= 2;
+						return col_to === col && row_to < row && row - row_to <= 2 && board[col][parseInt(row) - 1] === 0 && board[col_to][row_to] === 0;
 					}
 				} else if((color === 'white' && row_to > row) || (color === 'black' && row_to < row)) {
 					// single move
-					return col_to === col && Math.abs(row_to - row) <= 1;
+					return col_to === col && Math.abs(row_to - row) <= 1 && board[col_to][row_to] === 0;
 				}
 			} else if(piece === 'knight') {
 				return (Math.abs(col_to - col) === 2 && Math.abs(row_to - row) === 1) || (Math.abs(col_to - col) === 1 && Math.abs(row_to - row) === 2);
 			} else if(piece === 'bishop') {
-				return Math.abs(col_to - col) === Math.abs(row_to - row);
+				return between(col, row, col_to, row_to, piece) && Math.abs(col_to - col) === Math.abs(row_to - row);
 			} else if(piece === 'rook') {
-				return (col_to === col) || (row_to === row);
+				return between(col, row, col_to, row_to, piece) && ((col_to === col) || (row_to === row));
 			} else if(piece === 'queen') {
-				return (col_to === col) || (row_to === row) || (Math.abs(col_to - col) === Math.abs(row_to - row));
+				return between(col, row, col_to, row_to, piece) && ((col_to === col) || (row_to === row) || (Math.abs(col_to - col) === Math.abs(row_to - row)));
 			} else if(piece === 'king') {
 				var col_result = Math.abs(col_to - col),
 					row_result = Math.abs(row_to - row);
@@ -107,6 +97,11 @@ $(document).ready(function() {
 				row_to  = dropped.split('-')[1],
 				piece   = $(ui.draggable).attr('class').split(' ')[0];
 
+			/*if(!between(col, row, col_to, row_to, piece.split('_')[1])) {
+				console.log("FALSE");
+				return false;
+			}*/
+
 			board[col][row] = 0;
 			board[col_to][row_to] = pieces[piece];
 
@@ -119,4 +114,92 @@ $(document).ready(function() {
 			$(ui.draggable).parent('div').removeClass('down').children('img').appendTo('#' + dropped).css({ 'top': 0, 'left': 0 });
 		}
 	});
+
+	function between(col, row, col_to, row_to, piece) {
+		var col_var   = parseInt(col),
+			row_var   = parseInt(row),
+			col_step  = 1,
+			row_step  = 1;
+
+		var predicate = function(i, j) { return j <= row_to; }
+
+		if(col_to === col && piece !== 'bishop') {
+			// up or down
+			col_step = 0;
+			if(row_to > row) {
+				// up
+				north = true;
+				row_var = parseInt(row) + 1;
+			} else if(row_to < row) {
+				// down
+				south = true;
+				row_var = parseInt(row) - 1;
+				row_step = -1;
+				predicate = function(i, j) { return j >= row_to; }
+			}
+		} else if(row_to === row && piece !== 'bishop') {
+			// left or right
+			row_step = 0;
+			if(col_to > col) {
+				// right
+				east = true;
+				col_var = parseInt(col) + 1;
+				predicate = function(i, j) { return i <= col_to; }
+			} else if(col_to < col) {
+				// left
+				west = true;
+				northeast = false;
+				col_var = parseInt(col) - 1;
+				col_step = -1;
+				predicate = function(i, j) { return i >= col_to; }
+			}
+		} else if(Math.abs(col_to - col) === Math.abs(row_to - row) && (piece === 'bishop' || piece === 'queen')) {
+			// diagonal
+			if(col_to > col) {
+				// right
+				if(row_to > row) {
+					// up
+					col_var = parseInt(col) + 1;
+					row_var = parseInt(row) + 1;
+					predicate = function(i, j) { return i <= col_to && j <= row_to; }
+				} else if(row_to < row) {
+					// down
+					console.log('right down');
+					col_var = parseInt(col) + 1;
+					row_var = parseInt(row) - 1;
+					row_step = -1;
+					predicate = function(i, j) { return i <= col_to && j >= row_to; }
+				}
+			} else if(col_to < col) {
+				// left
+				if(row_to > row) {
+					// up
+					console.log('left up');
+					col_var = parseInt(col) - 1;
+					row_var = parseInt(row) + 1;
+					col_step = -1;
+					predicate = function(i, j) { return i >= col_to && j <= row_to; }
+				} else if(row_to < row) {
+					// down
+					col_var = parseInt(col) - 1;
+					row_var = parseInt(row) - 1;
+					col_step = -1;
+					row_step = -1;
+					predicate = function(i, j) { return i >= col_to && j >= row_to; }
+				}
+			}
+		}
+
+		console.log("Col: " + col + "\nRow: " + row + "\nCol to: " + col_to + "\nRow to: " + row_to + "\nCol var: " + col_var + "\nRow var: " + row_var + "\nPredicate: " + predicate(col_var, row_var) + "\n");
+
+		for(var i = col_var, j = row_var; predicate(i, j); i += col_step, j += row_step) {
+			if(board[i][j] !== 0) {
+				if(i != col_to || j != row_to) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
 });

@@ -2,7 +2,7 @@ Values:
 	White Pawn => 1
 	Black Pawn => 2
 
-	Wite Knight => 3
+	White Knight => 3
 	Black Knight => 4
 
 	White Bishop => 5
