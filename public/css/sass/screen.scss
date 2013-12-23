@@ -1,0 +1,94 @@
+// @import url(http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,300,700);
+
+$font: "Open Sans", sans-serif;
+$header-font: "Open Sans", sans-serif;
+$font-size-px: 18px;
+$font-size-rem: 1.8rem;
+
+$default-color: #423F38;
+$header-color: #37352F;
+
+$width: 800px;
+
+html, body, button, input, textarea, select {
+	font-family: $font;
+	color: $default-color;
+}
+
+html {
+	font-size: 62.5%;
+}
+
+body {
+	font-family: $font;
+	font-size: $font-size-px;
+	font-size: $font-size-rem;
+	margin: 0;
+	padding: 0;
+}
+
+.clearfix {
+	&:before, &:after {
+		content: "";
+		display: block;
+	}
+
+	&:after {
+		clear: both;
+	}
+}
+
+header {
+	width: $width;
+	margin: 0 auto;
+
+	h1 {
+		font-family: $header-font;
+		font-weight: 300;
+		color: $header-color;
+		text-transform: uppercase;
+		margin: 20px 0;
+	}
+}
+
+main {
+	display: block;
+	width: $width;
+	margin: 0 auto;
+
+	section#board {
+		position: relative;
+
+		img {
+			cursor: pointer;
+			-webkit-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
+		}
+
+		div.column {
+			@extend .clearfix;
+			float: left;
+			width: 100px;
+
+			>div {
+				width: 100px;
+				height: 100px;
+				background: #F0D9B5;
+
+				&.dark {
+					background: #B58863;
+				}
+
+				&.down {
+					border: 4px solid #FFFF00;
+					-webkit-box-sizing: border-box;
+					-moz-box-sizing: border-box;
+					-ms-box-sizing: border-box;
+					box-sizing: border-box;
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,18 @@
+Values:
+	White Pawn => 1
+	Black Pawn => 2
+
+	Wite Knight => 3
+	Black Knight => 4
+
+	White Bishop => 5
+	Black Bishop => 6
+
+	White Rook => 7
+	Black Rook => 8
+
+	White Queen => 9
+	Black Queen => 10
+
+	White King => 11
+	Black King => 12
