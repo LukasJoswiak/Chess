@@ -143,6 +143,111 @@ $(document).ready(function() {
 				$('<img src="/img/' + color + '_knight.png" class="' + color + '_knight promote" /><img src="/img/' + color + '_bishop.png" class="' + color + '_bishop promote" /><img src="/img/' + color + '_rook.png" class="' + color + '_rook promote" /><img src="/img/' + color + '_queen.png" class="' + color + '_queen promote" />').appendTo('#' + dropped);
 			}
 
+			// check if king is in check
+			for(a = 0; a < 2; a++) {
+				var location = $('.white_king').parent('div').attr('id').split('-');
+				if(a === 1)
+					location = $('.black_king').parent('div').attr('id').split('-');
+
+				var col 	 = parseInt(location[0]),
+					row 	 = parseInt(location[1]);
+
+				// check up, right, down, left, up-right, down-right, down-left, up-left
+				for(var d = 0; d < 8; d++) {
+					var i 		  = row + 1,
+						j		  = 0,
+						// condition = (8 - row >= 4) ? 8 : Math.abs(row - 8) + row,
+						condition = 8,
+						i_step 	  = 1,
+						j_step 	  = 0;
+
+					var predicate = function(i, j) { return i <= condition; }
+
+					if(d === 1) {
+						// right
+						i = col + 1;
+						// condition = (8 - col >= 4) ? 8 : Math.abs(col - 8) + col;
+						condition = 8;
+					} else if(d === 2) {
+						// down
+						i = row - 1;
+						condition = 1;
+						predicate = function(i, j) { return i >= condition;  }
+						i_step = -1;
+					} else if(d === 3) {
+						// left
+						i = col - 1;
+						condition = 1;
+						predicate = function(i, j) { return i >= condition;  }
+						i_step = -1;
+					} else if(d === 4) {
+						// up-right (piece checking)
+						i = col + 1;
+						j = row + 1;
+						var predicate = function(i, j) { return i <= condition && j <= condition; }
+						j_step = 1;
+					} else if(d === 5) {
+						// down-right
+						i = col + 1;
+						j = row - 1;
+						var predicate = function(i, j) { return i <= 8 && j >= 1; }
+						j_step = -1;
+					} else if(d === 6) {
+						// down-left
+						i = col - 1;
+						j = row - 1;
+						var predicate = function(i, j) { return i >= 1 && j >= 1; }
+						i_step = -1;
+						j_step = -1;
+					} else if(d === 7) {
+						// up-left
+						i = col - 1;
+						j = row + 1;
+						var predicate = function(i, j) { return i >= 1 && j <= 8; }
+						i_step = -1;
+						j_step = 1;
+					}
+
+					var space;
+					for(; predicate(i, j); i += i_step, j += j_step) {
+						if(d === 0 || d === 2)
+							space = board[col][i];
+						else if(d === 1 || d === 3)
+							space = board[i][row];
+						else if(d > 3)
+							space = board[i][j];
+
+						if(space !== 0) {
+							// console.log(/*"A: " + a + "\n*/"D: " + d + "\nI: " + i + "\nCol: " + col + "\nCondition: " + condition + "\nSpace: " + space);
+							if(space % 2 !== 0) {
+								// white piece at space
+								if((space === 5 || space === 7 || space === 9) && a !== 0) {
+									// white checks black with bishop, rook, or queen
+									if((space === 5 && d <= 3) || (space === 7 && d > 3)) // don't allow bishop vertical/horizontal check or rook diagonal check
+										break;
+
+									console.log('BLACK IN CHECK');
+									break;
+								}
+								break;
+							} else {
+								// black piece at space
+								if((space === 6 || space === 8 || space === 10) && a !== 1) {
+									// white checks black with bishop, rook, or queen
+									if((space === 6 && d <= 3) || (space === 8 && d > 3)) // don't allow bishop vertical/horizontal check or rook diagonal check
+										break;
+
+									console.log('WHITE IN CHECK');
+									break;
+								}
+								break;
+							}
+							break;
+						}
+					}
+				}
+			}
+
 			previous_move = {
 				'col': col,
 				'row': row,
@@ -155,8 +260,6 @@ $(document).ready(function() {
 	});
 
 	function en_passant_check(col, row, col_to, row_to, color, previous) {
-		console.log( Math.abs(parseInt(col) - parseInt(previous['col'])));
-
 		if(previous['color'] !== color && (previous['row'] == 2 || previous['row'] == 7) && Math.abs(parseInt(col) - parseInt(previous['col'])) == 1 && previous['col_to'] == col_to) {
 			if(color === 'white') {
 				var remove = parseInt(row_to) - 1;
@@ -222,7 +325,6 @@ $(document).ready(function() {
 					predicate = function(i, j) { return i <= col_to && j <= row_to; }
 				} else if(row_to < row) {
 					// down
-					console.log('right down');
 					col_var = parseInt(col) + 1;
 					row_var = parseInt(row) - 1;
 					row_step = -1;
@@ -232,7 +334,6 @@ $(document).ready(function() {
 				// left
 				if(row_to > row) {
 					// up
-					console.log('left up');
 					col_var = parseInt(col) - 1;
 					row_var = parseInt(row) + 1;
 					col_step = -1;
