@@ -65,6 +65,20 @@ main {
 			-moz-user-select: none;
 			-ms-user-select: none;
 			user-select: none;
+
+			&.promote {
+				float: left;
+				width: 50px;
+
+				&:hover {
+					background: #000;
+					opacity: 0.4;
+				}
+			}
+		}
+
+		div.down img.promote {
+			width: 46px !important;
 		}
 
 		div.column {

@@ -2,7 +2,7 @@ $(document).ready(function() {
 	var audio_element = document.createElement('audio');
 	audio_element.setAttribute('src', '/sound/move_final.mp3');
 
-	/*var */board = {
+	board = {
 		8: ['', 7, 1, 0, 0, 0, 0, 2, 8],
 		7: ['', 3, 1, 0, 0, 0, 0, 2, 4],
 		6: ['', 5, 1, 0, 0, 0, 0, 2, 6],
@@ -32,6 +32,15 @@ $(document).ready(function() {
 		$('section#board div').removeClass('down');
 
 		var id = $(this).parent('div').addClass('down').attr('id');
+	}).on('click', '.promote', function() {
+		var promote  = $(this).attr('class').split(' ')[0],
+			selector = $(this).parent('div'),
+			col 	 = selector.attr('id').split('-')[0],
+			row 	 = selector.attr('id').split('-')[1];
+
+		selector.html('<img src="/img/' + promote + '.png" class="' + promote + '" />');
+		board[col][row] = pieces[promote];
+		$('section#board img').draggable({ containment: 'section#board', cursorAt: { top: 50, left: 50 }, revert: 'invalid', revertDuration: 10 });
 	});
 
 	$('section#board img').draggable({ containment: 'section#board', cursorAt: { top: 50, left: 50 }, revert: 'invalid', revertDuration: 10 });
@@ -95,7 +104,9 @@ $(document).ready(function() {
 				dropped = $(this).attr('id'),
 				col_to  = dropped.split('-')[0],
 				row_to  = dropped.split('-')[1],
-				piece   = $(ui.draggable).attr('class').split(' ')[0];
+				whole   = $(ui.draggable).attr('class').split(' ')[0],
+				color	= whole.split('_')[0],
+				piece	= whole.split('_')[1];
 
 			/*if(!between(col, row, col_to, row_to, piece.split('_')[1])) {
 				console.log("FALSE");
@@ -103,7 +114,7 @@ $(document).ready(function() {
 			}*/
 
 			board[col][row] = 0;
-			board[col_to][row_to] = pieces[piece];
+			board[col_to][row_to] = pieces[whole];
 
 			audio_element.play();
 
@@ -112,6 +123,12 @@ $(document).ready(function() {
 			}
 
 			$(ui.draggable).parent('div').removeClass('down').children('img').appendTo('#' + dropped).css({ 'top': 0, 'left': 0 });
+
+			if(piece === 'pawn' && (row_to == 8 || row_to == 1)) {
+				// pawn promotion
+				$(ui.draggable).hide();
+				$('<img src="/img/' + color + '_knight.png" class="' + color + '_knight promote" /><img src="/img/' + color + '_bishop.png" class="' + color + '_bishop promote" /><img src="/img/' + color + '_rook.png" class="' + color + '_rook promote" /><img src="/img/' + color + '_queen.png" class="' + color + '_queen promote" />').appendTo('#' + dropped);
+			}
 		}
 	});
 
@@ -190,7 +207,7 @@ $(document).ready(function() {
 			}
 		}
 
-		console.log("Col: " + col + "\nRow: " + row + "\nCol to: " + col_to + "\nRow to: " + row_to + "\nCol var: " + col_var + "\nRow var: " + row_var + "\nPredicate: " + predicate(col_var, row_var) + "\n");
+		// console.log("Col: " + col + "\nRow: " + row + "\nCol to: " + col_to + "\nRow to: " + row_to + "\nCol var: " + col_var + "\nRow var: " + row_var + "\nPredicate: " + predicate(col_var, row_var) + "\n");
 
 		for(var i = col_var, j = row_var; predicate(i, j); i += col_step, j += row_step) {
 			if(board[i][j] !== 0) {
