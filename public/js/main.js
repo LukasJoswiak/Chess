@@ -57,6 +57,8 @@ $(document).ready(function() {
 				color  = whole.split('_')[0],
 				piece  = whole.split('_')[1];
 
+			en_passant = false;
+
 			var board_to = board[col_to][row_to];
 			if((color === 'white' && board_to % 2 !== 0) || (color === 'black' && board_to % 2 === 0 && board_to !== 0)) {
 				// prevent moving onto another piece of same color
@@ -68,6 +70,10 @@ $(document).ready(function() {
 					// diagonal piece take
 					var take = board[col_to][row_to];
 					if(take !== 0 && take !== 11 && take !== 12) {
+						return true;
+					} else if(take === 0 && ((color === 'black' && row_to == 3) || (color === 'white' && row_to == 6))) {
+						// en passant
+						en_passant = true;
 						return true;
 					}
 				} else if((color === 'white' && row == 2) || (color === 'black' && row == 7)) {
@@ -113,6 +119,13 @@ $(document).ready(function() {
 				return false;
 			}*/
 
+			if(en_passant) {
+				if(!en_passant_check(col, row, col_to, row_to, color, previous_move)) {
+					$(ui.draggable).css({ 'top': 0, 'left': 0 });
+					return false;
+				}
+			}
+
 			board[col][row] = 0;
 			board[col_to][row_to] = pieces[whole];
 
@@ -129,8 +142,36 @@ $(document).ready(function() {
 				$(ui.draggable).hide();
 				$('<img src="/img/' + color + '_knight.png" class="' + color + '_knight promote" /><img src="/img/' + color + '_bishop.png" class="' + color + '_bishop promote" /><img src="/img/' + color + '_rook.png" class="' + color + '_rook promote" /><img src="/img/' + color + '_queen.png" class="' + color + '_queen promote" />').appendTo('#' + dropped);
 			}
+
+			previous_move = {
+				'col': col,
+				'row': row,
+				'col_to': col_to,
+				'row_to': row_to,
+				'color': color,
+				'piece': piece
+			};
 		}
 	});
+
+	function en_passant_check(col, row, col_to, row_to, color, previous) {
+		console.log( Math.abs(parseInt(col) - parseInt(previous['col'])));
+
+		if(previous['color'] !== color && (previous['row'] == 2 || previous['row'] == 7) && Math.abs(parseInt(col) - parseInt(previous['col'])) == 1 && previous['col_to'] == col_to) {
+			if(color === 'white') {
+				var remove = parseInt(row_to) - 1;
+			} else if(color === 'black') {
+				var remove = parseInt(row_to) + 1;
+			}
+
+			board[previous['col_to']][previous['row_to']] = 0;
+			$('#' + col_to + '-' + remove).children('img').appendTo('#taken');
+
+			return true;
+		}
+
+		return false;
+	}
 
 	function between(col, row, col_to, row_to, piece) {
 		var col_var   = parseInt(col),
