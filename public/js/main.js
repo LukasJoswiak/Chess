@@ -54,14 +54,17 @@ $(document).ready(function() {
 		}
 	});
 
-	function update(board) {
+	function update(new_board) {
 		for(var c = 1; c <= 8; c++) {
 			for(var r = 1; r <= 8; r++) {
 				var img = '';
-				if(board[c][r] !== 0) {
-					img = '<img src="/img/' + pieces[board[c][r]] + '.png" class="' + pieces[board[c][r]] + '"" />';
+				// alert('Board: ' + board[c][r] + "\nNew Board: " + new_board[c][r]);
+				if(new_board[c][r] === 0) {
+					$('#' + c + '-' + r).html('');
+				} else if(new_board[c][r] !== board[c][r]) {
+					img = '<img src="/img/' + pieces[new_board[c][r]] + '.png" class="' + pieces[new_board[c][r]] + '"" />';
+					$('#' + c + '-' + r).html(img);
 				}
-				$('#' + c + '-' + r).html(img);
 			}
 		}
 
@@ -97,8 +100,8 @@ $(document).ready(function() {
 				color  = whole.split('_')[0],
 				piece  = whole.split('_')[1];
 
-			if(color !== board['turn'])
-				return false;
+			// if(color !== board['turn'])
+				// return false;
 
 			var start = 0,
 				end   = 1;
@@ -148,7 +151,7 @@ $(document).ready(function() {
 			} else if(piece === 'king') {
 				var col_result = Math.abs(col_to - col),
 					row_result = Math.abs(row_to - row);
-				return (col_result === 0 || col_result === 1) && (row_result === 0 || row_result === 1);
+				return ((col_result === 0 || col_result === 1) && (row_result === 0 || row_result === 1)) || ((color === 'white' && row_to == 1 && (col_to == 3 || col_to == 7)) || (color === 'black' && row_to == 8 && (col_to == 3 || col_to == 7)));
 			}
 
 			return false;
@@ -168,6 +171,47 @@ $(document).ready(function() {
 				console.log("FALSE");
 				return false;
 			}*/
+
+			// castle check
+			if(piece === 'king' && (color === 'white' && row_to == 1 && (col_to == 3 || col_to == 7)) || (color === 'black' && row_to == 8 && (col_to == 3 || col_to == 7))) {
+				if((color === 'white' && !check(0, 1, false)) || (color === 'black' && !check(1, 2, false))) {
+					var color_c  = 1,
+						rook_num = 7,
+						start 	 = 0,
+						end 	 = 1;
+
+					if(color === 'black') {
+						color_c  = 8,
+						rook_num = 8,
+						start 	 = 1,
+						end 	 = 2;
+					}
+
+					if(col == 5 && col_to == 3 && board[1][color_c] === rook_num && board[2][color_c] === 0 && board[3][color_c] === 0 && board[4][color_c] === 0 && !check(start, end, '3-' + color_c) && !check(start, end, '4-' + color_c)) {
+						// queen side castle
+						$('#1-' + color_c).children('img').appendTo('#4-' + color_c);
+						board[1][color_c] = 0;
+						board[4][color_c] = rook_num;
+					} else if(col == 5 && col_to == 7 && board[6][color_c] === 0 && board[7][color_c] === 0 && board[8][color_c] === rook_num && !check(start, end, '6-' + color_c) && !check(start, end, '7-' + color_c)) {
+						// king side castle
+						$('#8-' + color_c).children('img').appendTo('#6-' + color_c);
+						board[8][color_c] = 0;
+						board[6][color_c] = rook_num;
+					} else if(col == 5) {
+						board[col][row] = pieces[whole];
+						board[col_to][row_to] = 0; // get piece?
+						board['turn'] = color;
+						$(ui.draggable).css({ 'top': 0, 'left': 0 });
+						return false;
+					}
+				} else {
+					board[col][row] = pieces[whole];
+					board[col_to][row_to] = 0; // get piece?
+					board['turn'] = color;
+					$(ui.draggable).css({ 'top': 0, 'left': 0 });
+					return false;
+				}
+			}
 
 			if(en_passant) {
 				if(!en_passant_check(col, row, col_to, row_to, color, previous_move)) {
