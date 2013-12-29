@@ -12,7 +12,8 @@ $(document).ready(function() {
 		2: ['', 3, 1, 0, 0, 0, 0, 2, 4],
 		1: ['', 7, 1, 0, 0, 0, 0, 2, 8],
 		'turn': 'white',
-		'castle': { 'white': [false, false, false], 'black': [false, false, false] }
+		'castle': { 'white': [false, false, false], 'black': [false, false, false] },
+		'taken': []
 	};
 
 	var pieces = {
@@ -59,13 +60,19 @@ $(document).ready(function() {
 		for(var c = 1; c <= 8; c++) {
 			for(var r = 1; r <= 8; r++) {
 				var img = '';
-				// alert('Board: ' + board[c][r] + "\nNew Board: " + new_board[c][r]);
 				if(new_board[c][r] === 0) {
 					$('#' + c + '-' + r).html('');
 				} else if(new_board[c][r] !== board[c][r]) {
-					img = '<img src="/img/' + pieces[new_board[c][r]] + '.png" class="' + pieces[new_board[c][r]] + '"" />';
+					img = '<img src="/img/' + pieces[new_board[c][r]] + '.svg" class="' + pieces[new_board[c][r]] + '"" />';
 					$('#' + c + '-' + r).html(img);
 				}
+			}
+		}
+
+		if(board['taken'].length !== new_board['taken'].length) {
+			$('#taken').html('');
+			for(var g = 0; g < new_board['taken'].length; g++) {
+				$('<img src="/img/' + pieces[new_board['taken'][g]] + '.svg" />').appendTo('#taken');
 			}
 		}
 
@@ -82,7 +89,7 @@ $(document).ready(function() {
 			col 	 = selector.attr('id').split('-')[0],
 			row 	 = selector.attr('id').split('-')[1];
 
-		selector.html('<img src="/img/' + promote + '.png" class="' + promote + '" />');
+		selector.html('<img src="/img/' + promote + '.svg" class="' + promote + '" />');
 		board[col][row] = pieces[promote];
 		$('section#board img').draggable({ containment: 'section#board', cursorAt: { top: 50, left: 50 }, revert: 'invalid', revertDuration: 10 });
 	});
@@ -272,6 +279,7 @@ $(document).ready(function() {
 			audio_element.play();
 
 			if($('#' + dropped).children('img').length > 0) {
+				board['taken'].push(pieces[$('#' + dropped).children('img').attr('class').split(' ')[0]]);
 				$('#' + dropped).children('img').removeClass('ui-draggable').appendTo('#taken');
 			}
 
@@ -280,7 +288,7 @@ $(document).ready(function() {
 			if(piece === 'pawn' && (row_to == 8 || row_to == 1)) {
 				// pawn promotion
 				$(ui.draggable).hide();
-				$('<img src="/img/' + color + '_knight.png" class="' + color + '_knight promote" /><img src="/img/' + color + '_bishop.png" class="' + color + '_bishop promote" /><img src="/img/' + color + '_rook.png" class="' + color + '_rook promote" /><img src="/img/' + color + '_queen.png" class="' + color + '_queen promote" />').appendTo('#' + dropped);
+				$('<img src="/img/' + color + '_knight.svg" class="' + color + '_knight promote" /><img src="/img/' + color + '_bishop.svg" class="' + color + '_bishop promote" /><img src="/img/' + color + '_rook.svg" class="' + color + '_rook promote" /><img src="/img/' + color + '_queen.svg" class="' + color + '_queen promote" />').appendTo('#' + dropped);
 			}
 
 			previous_move = {
