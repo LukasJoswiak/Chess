@@ -2,7 +2,21 @@ $(document).ready(function() {
 	var audio_element = document.createElement('audio');
 	audio_element.setAttribute('src', '/sound/move_final.mp3');
 
-	/*var */board = {
+	var board = {
+		8: ['', 7, 1, 0, 0, 0, 0, 2, 8],
+		7: ['', 3, 1, 0, 0, 0, 0, 2, 4],
+		6: ['', 5, 1, 0, 0, 0, 0, 2, 6],
+		5: ['', 11, 1, 0, 0, 0, 0, 2, 12],
+		4: ['', 9, 1, 0, 0, 0, 0, 2, 10],
+		3: ['', 5, 1, 0, 0, 0, 0, 2, 6],
+		2: ['', 3, 1, 0, 0, 0, 0, 2, 4],
+		1: ['', 7, 1, 0, 0, 0, 0, 2, 8],
+		'turn': 'white',
+		'castle': { 'white': [false, false, false], 'black': [false, false, false] },
+		'taken': []
+	};
+
+	var orig = {
 		8: ['', 7, 1, 0, 0, 0, 0, 2, 8],
 		7: ['', 3, 1, 0, 0, 0, 0, 2, 4],
 		6: ['', 5, 1, 0, 0, 0, 0, 2, 6],
@@ -49,14 +63,18 @@ $(document).ready(function() {
 
 	socket.on('update', function(data) {
 		if(data) {
-			update(data.board);
+			update(data.board, false, false);
 			board = data.board;
 		} else {
 			console.log("There is a problem: " + data);
 		}
 	});
 
-	function update(new_board) {
+	socket.on('reset_game', function() {
+		update(orig, true, true);
+	});
+
+	function update(new_board, reset, server) {
 		for(var c = 1; c <= 8; c++) {
 			for(var r = 1; r <= 8; r++) {
 				var img = '';
@@ -76,8 +94,31 @@ $(document).ready(function() {
 			}
 		}
 
+		if(reset) {
+			board = {
+				8: ['', 7, 1, 0, 0, 0, 0, 2, 8],
+				7: ['', 3, 1, 0, 0, 0, 0, 2, 4],
+				6: ['', 5, 1, 0, 0, 0, 0, 2, 6],
+				5: ['', 11, 1, 0, 0, 0, 0, 2, 12],
+				4: ['', 9, 1, 0, 0, 0, 0, 2, 10],
+				3: ['', 5, 1, 0, 0, 0, 0, 2, 6],
+				2: ['', 3, 1, 0, 0, 0, 0, 2, 4],
+				1: ['', 7, 1, 0, 0, 0, 0, 2, 8],
+				'turn': 'white',
+				'castle': { 'white': [false, false, false], 'black': [false, false, false] },
+				'taken': []
+			};
+
+			if(!server)
+				socket.emit('reset');
+		}
+
 		$('section#board img').draggable({ containment: 'section#board', cursorAt: { top: 50, left: 50 }, revert: 'invalid', revertDuration: 10 });
 	}
+
+	$('#reset').click(function() {
+		update(orig, true, false);
+	});
 
 	$('section#board').on('mousedown', 'img', function() {
 		$('section#board div').removeClass('down');

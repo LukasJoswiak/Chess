@@ -58,6 +58,7 @@ main {
 
 	section#board {
 		position: relative;
+		height: 800px;
 
 		img {
 			cursor: pointer;
@@ -116,6 +117,25 @@ main {
 					}
 				}
 			}
+		}
+	}
+
+	button#reset {
+		display: block;
+		width: 240px;
+		height: 40px;
+		font-size: 18px;
+		color: #F7F7F7;
+		background: #22211D;
+		margin: 40px auto 10px auto;
+		border: 0;
+		outline: none;
+		border-radius: 0;
+		-webkit-appearance: none;
+		cursor: pointer;
+
+		&:hover {
+			background: #2D2B26;
 		}
 	}
 }
