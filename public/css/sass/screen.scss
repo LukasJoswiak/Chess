@@ -75,6 +75,14 @@ main {
 					opacity: 0.4;
 				}
 			}
+
+			&.upside-down {
+				-webkit-transform: rotate(180deg);
+				-moz-transform: rotate(180deg);
+				-o-transform: rotate(180deg);
+				-ms-transform: rotate(180deg);
+				transform: rotate(180deg);
+			}
 		}
 
 		div.down img.promote {
@@ -101,6 +109,11 @@ main {
 					-moz-box-sizing: border-box;
 					-ms-box-sizing: border-box;
 					box-sizing: border-box;
+
+					img {
+						margin-top: -4px;
+						margin-left: -4px;
+					}
 				}
 			}
 		}
