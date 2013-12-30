@@ -12,6 +12,8 @@ $width: 800px;
 
 html, body, button, input, textarea, select {
 	font-family: $font;
+	font-size: $font-size-px;
+	font-size: $font-size-rem;
 	color: $default-color;
 }
 
@@ -21,8 +23,6 @@ html {
 
 body {
 	font-family: $font;
-	font-size: $font-size-px;
-	font-size: $font-size-rem;
 	margin: 0;
 	padding: 0;
 }
@@ -40,14 +40,13 @@ body {
 
 header {
 	width: $width;
-	margin: 0 auto;
+	margin: 20px auto;
 
 	h1 {
 		font-family: $header-font;
 		font-weight: 300;
 		color: $header-color;
 		text-transform: uppercase;
-		margin: 20px 0;
 	}
 }
 
@@ -55,6 +54,44 @@ main {
 	display: block;
 	width: $width;
 	margin: 0 auto;
+
+	section#players {
+		margin: 20px 0;
+
+		h1 {
+			font-weight: 300;
+			font-size: 26px;
+			margin: 0;
+		}
+
+		div {
+			&.me {
+				font-weight: 700;
+			}
+		}
+
+		#save {
+			display: none;
+		}
+
+		input {
+			width: 100px;
+			font-size: 16px;
+			padding: 3px 5px;
+			border: 1px solid #CCC;
+			outline: none;
+			border-radius: 0;
+			-webkit-appearance: none;
+
+			&:hover {
+				border-color: #A3A3A3;
+			}
+
+			&:focus, &:active {
+				border-color: #525252;
+			}
+		}
+	}
 
 	section#board {
 		position: relative;

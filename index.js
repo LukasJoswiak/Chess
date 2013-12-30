@@ -8,9 +8,24 @@ app.get("/", function(req, res) {
 
 app.use(express.static(__dirname + '/public'));
 
-var io = require('socket.io').listen(app.listen(port));
+var io 		  = require('socket.io').listen(app.listen(port)),
+	usernames = {};
 
 io.sockets.on('connection', function(socket) {
+	socket.on('add_user', function(username) {
+		socket.username = username;
+		usernames[username] = username;
+
+		io.sockets.emit('update_players', usernames);
+	});
+
+	socket.on('update_user', function(data) {
+		delete usernames[data.old];
+		usernames[data.me] = data.me;
+		socket.username = data.me;
+		io.sockets.emit('update_players', usernames);
+	});
+
 	socket.on('send', function(data) {
 		socket.broadcast.emit('update', data);
 	});
@@ -20,6 +35,7 @@ io.sockets.on('connection', function(socket) {
 	});
 
 	socket.on('disconnect', function() {
-		console.log(socket.id + ' disconnected');
+		delete usernames[socket.username];
+		io.sockets.emit('update_players', usernames);
 	});
 });

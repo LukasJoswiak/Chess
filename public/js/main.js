@@ -59,7 +59,25 @@ $(document).ready(function() {
 
 	var previous_move = {};
 
-	var socket = io.connect('http://' + window.location.hostname + ':4000');
+	var socket = io.connect('http://' + window.location.hostname + ':4000'),
+		me 	   = 'Player_' + Math.floor(Math.random() * 11110);
+
+	$('#me').html(me);
+
+	socket.on('connect', function() {
+		socket.emit('add_user', me);
+	});
+
+	socket.on('update_players', function(data) {
+		$('#users').empty();
+		$.each(data, function(key) {
+			var append = "<div>" + key + "</div>";
+			if(key === me) {
+				append = "<div class='me'>" + key + "</div>";
+			}
+			$('#users').append(append);
+		});
+	});
 
 	socket.on('update', function(data) {
 		if(data) {
@@ -115,6 +133,37 @@ $(document).ready(function() {
 
 		$('section#board img').draggable({ containment: 'section#board', cursorAt: { top: 50, left: 50 }, revert: 'invalid', revertDuration: 10 });
 	}
+
+	$('#edit_name').click(function() {
+		if($('#save').is(':visible')) {
+			$('#save').hide();
+			$('#edit_name').html('edit name');
+			$('#me').html(me);
+		} else {
+			$(this).html('cancel');
+			$('#save').show();
+			$('#me').html('<input type="text" name="name" value="' + $('#me').html() + '" />').children('input').select();
+		}
+	});
+
+	$('#me').on('keydown', 'input', function(e) {
+		var code = e.keyCode || e.which;
+
+		if(code === 13) {
+			$('#save_name').trigger('click');
+		}
+	});
+
+	$('#save_name').click(function() {
+		$('#save').hide();
+		$('#edit_name').html('edit name');
+		var old = me;
+		me = $('input[name=name]').val();
+		$('#me').html(me);
+
+		console.log(old + "\n" + me);
+		socket.emit('update_user', { old: old, me: me });
+	});
 
 	$('#reset').click(function() {
 		update(orig, true, false);
