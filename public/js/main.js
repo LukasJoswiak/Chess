@@ -2,7 +2,7 @@ $(document).ready(function() {
 	var audio_element = document.createElement('audio');
 	audio_element.setAttribute('src', '/sound/move_final.mp3');
 
-	var board = {
+	/*var */board = {
 		8: ['', 7, 1, 0, 0, 0, 0, 2, 8],
 		7: ['', 3, 1, 0, 0, 0, 0, 2, 4],
 		6: ['', 5, 1, 0, 0, 0, 0, 2, 6],
@@ -13,7 +13,8 @@ $(document).ready(function() {
 		1: ['', 7, 1, 0, 0, 0, 0, 2, 8],
 		'turn': 'white',
 		'castle': { 'white': [false, false, false], 'black': [false, false, false] },
-		'taken': []
+		'taken': [],
+		'moves': 0
 	};
 
 	var orig = {
@@ -27,7 +28,8 @@ $(document).ready(function() {
 		1: ['', 7, 1, 0, 0, 0, 0, 2, 8],
 		'turn': 'white',
 		'castle': { 'white': [false, false, false], 'black': [false, false, false] },
-		'taken': []
+		'taken': [],
+		'moves': 0
 	};
 
 	var pieces = {
@@ -59,8 +61,11 @@ $(document).ready(function() {
 
 	var previous_move = {};
 
-	var socket = io.connect('http://' + window.location.hostname + ':4000'),
-		me 	   = 'Player_' + Math.floor(Math.random() * 11110);
+	var socket   	= io.connect('http://' + window.location.hostname + ':4000'),
+		me 	     	= 'Player_' + Math.floor(Math.random() * 11110),
+		my_color 	= 0,
+		multiplayer = true; // CHANGE BACK TO LOCAL
+		switched	= false;
 
 	$('#me').html(me);
 
@@ -81,25 +86,60 @@ $(document).ready(function() {
 
 	socket.on('update', function(data) {
 		if(data) {
-			update(data.board, false, false);
-			board = data.board;
+			update(data.board, false, false, false);
+			if(!switched)
+				board = jQuery.extend(true, {}, data.board);
+			console.log("");
 		} else {
 			console.log("There is a problem: " + data);
 		}
 	});
 
 	socket.on('reset_game', function() {
-		update(orig, true, true);
+		update(orig, true, true, false);
 	});
 
-	function update(new_board, reset, server) {
+	function update(new_board, reset, server, is_switched) {
+		if(new_board['turn'] === 'black' && new_board['moves'] === 1) {
+			switched = true;
+		}
+
+		console.log("Switched: " + switched);
+		if(switched && !is_switched) {
+			board = jQuery.extend(true, {}, new_board);
+			var rotated_board = jQuery.extend({}, new_board);
+
+			for(var o = 1; o <= 8; o++) {
+				rotated_board[o].push("");
+				rotated_board[o].reverse();
+				// board[o][0] = "";
+			}
+
+			rotated_board[1] = new_board[8];
+			rotated_board[2] = new_board[7];
+			rotated_board[3] = new_board[6];
+			rotated_board[4] = new_board[5];
+			rotated_board[5] = new_board[4];
+			rotated_board[6] = new_board[3];
+			rotated_board[7] = new_board[2];
+			rotated_board[8] = new_board[1];
+
+			if(board['moves'] === 0) {
+				board['turn'] = 'black';
+				board['moves'] = 1;
+			}
+
+			update(rotated_board, false, false, true);
+			return;
+		}
+
 		for(var c = 1; c <= 8; c++) {
 			for(var r = 1; r <= 8; r++) {
 				var img = '';
 				if(new_board[c][r] === 0) {
 					$('#' + c + '-' + r).html('');
-				} else if(new_board[c][r] !== board[c][r]) {
-					img = '<img src="/img/' + pieces[new_board[c][r]] + '.svg" class="' + pieces[new_board[c][r]] + '"" />';
+				} else if(new_board[c][r] !== board[c][r] || switched) {
+					img = '<img src="/img/' + pieces[new_board[c][r]] + '.svg" class="' + pieces[new_board[c][r]] + '" />';
 					$('#' + c + '-' + r).html(img);
 				}
 			}
@@ -124,14 +164,19 @@ $(document).ready(function() {
 				1: ['', 7, 1, 0, 0, 0, 0, 2, 8],
 				'turn': 'white',
 				'castle': { 'white': [false, false, false], 'black': [false, false, false] },
-				'taken': []
+				'taken': [],
+				'moves': 0
 			};
+
+			multiplayer = true;
+			my_color = 0;
 
 			if(!server)
 				socket.emit('reset');
 		}
 
 		$('section#board img').draggable({ containment: 'section#board', cursorAt: { top: 50, left: 50 }, revert: 'invalid', revertDuration: 10 });
+		console.log("");
 	}
 
 	$('#edit_name').click(function() {
@@ -161,12 +206,11 @@ $(document).ready(function() {
 		me = $('input[name=name]').val();
 		$('#me').html(me);
 
-		console.log(old + "\n" + me);
 		socket.emit('update_user', { old: old, me: me });
 	});
 
 	$('#reset').click(function() {
-		update(orig, true, false);
+		update(orig, true, false, false);
 	});
 
 	$('section#board').on('mousedown', 'img', function() {
@@ -189,14 +233,24 @@ $(document).ready(function() {
 		tolerance: 'intersect',
 		accept: function(e) {
 			var from   = $(e).parent('div').attr('id').split('-'),
-				col    = from[0],
-				row	   = from[1],
+				col    = parseInt(from[0]),
+				row	   = parseInt(from[1]),
 				to 	   = $(this).attr('id').split('-'),
-				col_to = to[0],
-				row_to = to[1],
+				col_to = parseInt(to[0]),
+				row_to = parseInt(to[1]),
 				whole  = $(e).attr('class').split(' ')[0],
 				color  = whole.split('_')[0],
 				piece  = whole.split('_')[1];
+
+			if(switched) {
+				// console.log('Col to: ' + col_to + '. Row to: ' + row_to);
+				col = 9 - col;
+				row = 9 - row;
+				col_to = 9 - col_to;
+				row_to = 9 - row_to;
+
+				// console.log('Col to s: ' + col_to + '. Row tos: ' + row_to + "\n");
+			}
 
 			if(color !== board['turn'])
 				return false;
@@ -263,13 +317,33 @@ $(document).ready(function() {
 				row_to  = dropped.split('-')[1],
 				whole   = $(ui.draggable).attr('class').split(' ')[0],
 				color	= whole.split('_')[0],
-				piece	= whole.split('_')[1],
-				previous_piece = board[col_to][row_to];
+				piece	= whole.split('_')[1];
+
+			if(switched) {
+				// console.log('Col to: ' + col_to + '. Row to: ' + row_to);
+				col = 9 - col;
+				row = 9 - row;
+				col_to = 9 - col_to;
+				row_to = 9 - row_to;
+
+				// console.log('Col to s: ' + col_to + '. Row tos: ' + row_to + "\n");
+			}
+
+			var previous_piece = board[col_to][row_to];
 
 			/*if(!between(col, row, col_to, row_to, piece.split('_')[1])) {
 				console.log("FALSE");
 				return false;
 			}*/
+
+			var my_color_val = (my_color === 0) ? 'white' : 'black';
+			if(board['moves'] > 2 && multiplayer && color != my_color_val) {
+				// board[col][row] = pieces[whole];
+				// board[col_to][row_to] = 0;
+				// board['turn'] = color;
+				$(ui.draggable).css({ 'top': 0, 'left': 0 });
+				return false;
+			}
 
 			// castle check
 			if(piece === 'king' && (color === 'white' && row_to == 1 && (col_to == 3 || col_to == 7) || (color === 'black' && row_to == 8 && (col_to == 3 || col_to == 7)))) {
@@ -288,12 +362,18 @@ $(document).ready(function() {
 
 					if(col == 5 && col_to == 3 && board['castle'][color][0] === false && board[1][color_c] === rook_num && board[2][color_c] === 0 && board[3][color_c] === 0 && board[4][color_c] === 0 && !check(start, end, '3-' + color_c) && !check(start, end, '4-' + color_c)) {
 						// queen side castle
-						$('#1-' + color_c).children('img').appendTo('#4-' + color_c);
+						if(switched)
+							$('#8-' + (9 - color_c)).children('img').appendTo('#5-' + (9 - color_c));
+						else
+							$('#1-' + color_c).children('img').appendTo('#4-' + color_c);
 						board[1][color_c] = 0;
 						board[4][color_c] = rook_num;
 					} else if(col == 5 && col_to == 7 && board['castle'][color][2] === false && board[6][color_c] === 0 && board[7][color_c] === 0 && board[8][color_c] === rook_num && !check(start, end, '6-' + color_c) && !check(start, end, '7-' + color_c)) {
 						// king side castle
-						$('#8-' + color_c).children('img').appendTo('#6-' + color_c);
+						if(switched)
+							$('#1-' + (9 - color_c)).children('img').appendTo('#3-' + (9 - color_c));
+						else
+							$('#8-' + color_c).children('img').appendTo('#6-' + color_c);
 						board[8][color_c] = 0;
 						board[6][color_c] = rook_num;
 					} else if(col == 5) {
@@ -367,6 +447,12 @@ $(document).ready(function() {
 				}
 			}
 
+			if(board['moves'] < 2 && board['moves'] % 2 !== 0) {
+				my_color = 1;
+			} else if(board['moves'] % 2 !== my_color) {
+				multiplayer = false;
+			}
+
 			audio_element.play();
 
 			if($('#' + dropped).children('img').length > 0) {
@@ -381,6 +467,8 @@ $(document).ready(function() {
 				$(ui.draggable).hide();
 				$('<img src="/img/' + color + '_knight.svg" class="' + color + '_knight promote" /><img src="/img/' + color + '_bishop.svg" class="' + color + '_bishop promote" /><img src="/img/' + color + '_rook.svg" class="' + color + '_rook promote" /><img src="/img/' + color + '_queen.svg" class="' + color + '_queen promote" />').appendTo('#' + dropped);
 			}
+
+			board['moves']++;
 
 			previous_move = {
 				'col': col,
@@ -416,16 +504,22 @@ $(document).ready(function() {
 	function check(a, b, dropped) {
 		// check if king is in check
 		for(a; a < b; a++) {
-			if(dropped !== false) {
+			if(dropped !== false && $('#' + dropped).children('img').attr('class') === 'white_king' || $('#' + dropped).children('img').attr('class') === 'black_king') {
 				var location = dropped.split('-');
 			} else {
+				dropped = false;
 				var location = $('.white_king').parent('div').attr('id').split('-');
 				if(a === 1)
 					location = $('.black_king').parent('div').attr('id').split('-');
 			}
 
-			var col 	 = parseInt(location[0]),
-				row 	 = parseInt(location[1]);
+			var col = parseInt(location[0]),
+				row = parseInt(location[1]);
+
+			if(switched && dropped === false) {
+				col = 9 - col;
+				row = 9 - row;
+			}
 
 			// check pawns
 			for(g = 0; g < 2; g++) {
@@ -558,6 +652,9 @@ $(document).ready(function() {
 						space = board[i][row];
 					else if(d > 3)
 						space = board[i][j];
+
+					if(i < 1 || i > 8 || j < 1 || j > 8)
+						break;
 
 					if(space !== 0) {
 						// console.log(/*"A: " + a + "\n*/"D: " + d + "\nI: " + i + "\nCol: " + col + "\nCondition: " + condition + "\nSpace: " + space);
