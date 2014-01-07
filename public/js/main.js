@@ -67,6 +67,12 @@ $(document).ready(function() {
 		multiplayer = true; // CHANGE BACK TO LOCAL
 		switched	= false;
 
+	if(html5_storage()) {
+		if(sessionStorage.getItem('name') !== null) {
+			me = sessionStorage.getItem('name');
+		}
+	}
+
 	$('#me').html(me);
 
 	socket.on('connect', function() {
@@ -104,7 +110,6 @@ $(document).ready(function() {
 			switched = true;
 		}
 
-		console.log("Switched: " + switched);
 		if(switched && !is_switched) {
 			board = jQuery.extend(true, {}, new_board);
 			var rotated_board = jQuery.extend({}, new_board);
@@ -205,6 +210,10 @@ $(document).ready(function() {
 		var old = me;
 		me = $('input[name=name]').val();
 		$('#me').html(me);
+
+		if(html5_storage()) {
+			sessionStorage.setItem('name', me);
+		}
 
 		socket.emit('update_user', { old: old, me: me });
 	});
@@ -825,5 +834,13 @@ $(document).ready(function() {
 		}
 
 		return true;
+	}
+
+	function html5_storage() {
+		try {
+			return 'localStorage' in window && window['localStorage'] !== null;
+		} catch(e) {
+			return false;
+		}
 	}
 });
