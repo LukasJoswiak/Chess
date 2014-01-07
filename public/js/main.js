@@ -338,7 +338,7 @@ $(document).ready(function() {
 			}
 
 			// king next to king
-			/*var col_check = col_to + 1;
+			var col_check = col_to + 1;
 			var row_check = row_to + 1;
 			for(var m = 0; m < 8; m++) {
 				switch(m) {
@@ -377,7 +377,7 @@ $(document).ready(function() {
 						return false;
 					}
 				}
-			}*/
+			}
 
 			var to_castle = false;
 			// castle check
