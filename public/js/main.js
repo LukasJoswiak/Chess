@@ -313,8 +313,8 @@ $(document).ready(function() {
 				col     = from[0],
 				row	    = from[1],
 				dropped = $(this).attr('id'),
-				col_to  = dropped.split('-')[0],
-				row_to  = dropped.split('-')[1],
+				col_to  = parseInt(dropped.split('-')[0]),
+				row_to  = parseInt(dropped.split('-')[1]),
 				whole   = $(ui.draggable).attr('class').split(' ')[0],
 				color	= whole.split('_')[0],
 				piece	= whole.split('_')[1];
@@ -331,20 +331,55 @@ $(document).ready(function() {
 
 			var previous_piece = board[col_to][row_to];
 
-			/*if(!between(col, row, col_to, row_to, piece.split('_')[1])) {
-				console.log("FALSE");
-				return false;
-			}*/
-
 			var my_color_val = (my_color === 0) ? 'white' : 'black';
 			if(board['moves'] > 2 && multiplayer && color != my_color_val) {
-				// board[col][row] = pieces[whole];
-				// board[col_to][row_to] = 0;
-				// board['turn'] = color;
 				$(ui.draggable).css({ 'top': 0, 'left': 0 });
 				return false;
 			}
 
+			// king next to king
+			/*var col_check = col_to + 1;
+			var row_check = row_to + 1;
+			for(var m = 0; m < 8; m++) {
+				switch(m) {
+					case 1:
+						row_check = row_to;
+						col_check = col_to + 1;
+						break;
+					case 2:
+						row_check = row_to - 1;
+						col_check = col_to + 1;
+						break;
+					case 3:
+						col_check = col_to;
+						row_check = row_to - 1;
+						break;
+					case 4:
+						col_check = col_to - 1;
+						row_check = row_to - 1;
+						break;
+					case 5:
+						col_check = col_to - 1;
+						row_check = row_to;
+						break;
+					case 6:
+						col_check = col_to - 1;
+						row_check = row_to + 1;
+						break;
+					case 7:
+						col_check = col_to;
+						row_check = row_to + 1;
+				}
+
+				if(col_check >= 1 && col_check <= 8 && row_check >= 1 && row_check <= 8) {
+					if((color === 'white' && board[col_check][row_check] === 12) || (color === 'black' && board[col_check][row_check] === 11)) {
+						$(ui.draggable).css({ 'top': 0, 'left': 0 });
+						return false;
+					}
+				}
+			}*/
+
+			var to_castle = false;
 			// castle check
 			if(piece === 'king' && (color === 'white' && row_to == 1 && (col_to == 3 || col_to == 7) || (color === 'black' && row_to == 8 && (col_to == 3 || col_to == 7)))) {
 				if((color === 'white' && !check(0, 1, false) && board['castle']['white'][1] === false) || (color === 'black' && !check(1, 2, false) && board['castle']['black'][1] === false)) {
@@ -368,6 +403,7 @@ $(document).ready(function() {
 							$('#1-' + color_c).children('img').appendTo('#4-' + color_c);
 						board[1][color_c] = 0;
 						board[4][color_c] = rook_num;
+						to_castle = true;
 					} else if(col == 5 && col_to == 7 && board['castle'][color][2] === false && board[6][color_c] === 0 && board[7][color_c] === 0 && board[8][color_c] === rook_num && !check(start, end, '6-' + color_c) && !check(start, end, '7-' + color_c)) {
 						// king side castle
 						if(switched)
@@ -376,6 +412,7 @@ $(document).ready(function() {
 							$('#8-' + color_c).children('img').appendTo('#6-' + color_c);
 						board[8][color_c] = 0;
 						board[6][color_c] = rook_num;
+						to_castle = true;
 					} else if(col == 5) {
 						board[col][row] = pieces[whole];
 						board[col_to][row_to] = 0;
@@ -405,16 +442,20 @@ $(document).ready(function() {
 				board['castle']['black'][2] = true;
 			}
 
-			if(en_passant) {
-				if(!en_passant_check(col, row, col_to, row_to, color, previous_move)) {
-					$(ui.draggable).css({ 'top': 0, 'left': 0 });
-					return false;
-				}
-			}
-
 			board[col][row] = 0;
 			board[col_to][row_to] = pieces[whole];
 			board['turn'] = (color === 'white') ? 'black' : 'white';
+
+			if(en_passant) {
+				var start = (color === 'white') ? 0 : 1,
+					end   = start + 1;
+				if(!check(start, end, false)) {
+					if(!en_passant_check(col, row, col_to, row_to, color, previous_move)) {
+						$(ui.draggable).css({ 'top': 0, 'left': 0 });
+						return false;
+					}
+				}
+			}
 
 			for(var e = 0; e < 2; e++) {
 				var start = 0,
@@ -427,8 +468,16 @@ $(document).ready(function() {
 				}
 
 				var third = false;
-				if(piece == 'king' && board['turn'] != cc)
+				if(piece == 'king' && board['turn'] !== cc && !to_castle) {
 					third = dropped;
+
+					if(switched) {
+						var dropped_col = parseInt(dropped.split('-')[0]),
+							dropped_row = parseInt(dropped.split('-')[1]);
+
+						third = (9 - dropped_col) + "-" + (9 - dropped_row)
+					}
+				}
 				var is_in_check = check(start, end, third);
 				if(previous_move['check'] == true && is_in_check) {
 					console.log('still in check');
@@ -504,7 +553,7 @@ $(document).ready(function() {
 	function check(a, b, dropped) {
 		// check if king is in check
 		for(a; a < b; a++) {
-			if(dropped !== false && $('#' + dropped).children('img').attr('class') === 'white_king' || $('#' + dropped).children('img').attr('class') === 'black_king') {
+			if(dropped !== false/* && $('#' + dropped).children('img').attr('class') === 'white_king' || $('#' + dropped).children('img').attr('class') === 'black_king'*/) {
 				var location = dropped.split('-');
 			} else {
 				dropped = false;
@@ -653,7 +702,7 @@ $(document).ready(function() {
 					else if(d > 3)
 						space = board[i][j];
 
-					if(i < 1 || i > 8 || j < 1 || j > 8)
+					if(i < 0 || i > 8 || j < 0 || j > 8)
 						break;
 
 					if(space !== 0) {
